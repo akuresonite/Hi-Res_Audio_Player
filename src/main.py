@@ -11,6 +11,10 @@ def main(page: ft.Page):
     page.padding = 0
     page.spacing = 0
     page.bgcolor = "#000000"
+    
+    # mobile aspect ratio
+    page.window_width = 390
+    page.window_height = 844
 
     # State variables
     current_track = None # Dictionary
@@ -48,13 +52,25 @@ def main(page: ft.Page):
             title = tag.title if tag.title else filename
             artist = tag.artist if tag.artist else "Unknown Artist"
             dur = tag.duration * 1000 if tag.duration else 0
+            
+            # Extract Track Number
+            track_num = 0
+            if tag.track:
+                try:
+                    # Handle "1/12" format
+                    t_str = str(tag.track).split('/')[0]
+                    track_num = int(t_str) if t_str.isdigit() else 0
+                except:
+                    track_num = 0
+            
             return {
                 "path": file_path,
                 "title": title,
                 "artist": artist,
                 "duration": dur,
                 "ext": ext,
-                "filename": filename
+                "filename": filename,
+                "track": track_num
             }
         except Exception as e:
             print(f"Error reading {filename}: {e}")
@@ -64,7 +80,8 @@ def main(page: ft.Page):
                 "artist": "Unknown",
                 "duration": 0,
                 "ext": ext,
-                "filename": filename
+                "filename": filename,
+                "track": 0
             }
 
     def natural_sort_key(s):
@@ -104,6 +121,8 @@ def main(page: ft.Page):
                     # Apply current sort
                     if current_sort_key == "Title":
                          new_playlist.sort(key=lambda x: natural_sort_key(x.get('title', '')))
+                    elif current_sort_key == "Track Number":
+                         new_playlist.sort(key=lambda x: (x.get('track', 0), natural_sort_key(x.get('title', ''))))
                     else:
                          new_playlist.sort(key=lambda x: natural_sort_key(x.get('filename', '')))
                          
@@ -123,8 +142,7 @@ def main(page: ft.Page):
         if not playlist: return
         
         current_sort_key = sort_key
-        print(f"DEBUG: Request to sort by '{sort_key}' (Natural)")
-        print(f"DEBUG: Before Sort (First 3): {[t.get('title') for t in playlist[:3]]}")
+        print(f"DEBUG: Request to sort by '{sort_key}' (Natural/Track)")
         
         # Store current playing path to restore index
         current_path = playlist[current_playlist_index]['path'] if current_playlist_index >= 0 and current_playlist_index < len(playlist) else None
@@ -133,6 +151,9 @@ def main(page: ft.Page):
             playlist.sort(key=lambda x: natural_sort_key(x.get('title', '')))
         elif sort_key == "File Name":
             playlist.sort(key=lambda x: natural_sort_key(x.get('filename', '')))
+        elif sort_key == "Track Number":
+             # Primary sort: Track Number, Secondary: Title
+            playlist.sort(key=lambda x: (x.get('track', 0), natural_sort_key(x.get('title', ''))))
             
         print(f"DEBUG: After Sort (First 3): {[t.get('title') for t in playlist[:3]]}")
 
@@ -156,9 +177,9 @@ def main(page: ft.Page):
         # Speed Controls
         speed_row = ft.Row([
             ft.Text("Speed:", color=ft.colors.GREY_400, size=12),
-            ft.IconButton(ft.icons.REMOVE_CIRCLE_OUTLINE, icon_color=ft.colors.GREY_300, icon_size=20, on_click=lambda e: change_speed(-0.25)),
-            ft.Text(f"{playback_rate}x", color=ft.colors.WHITE, size=12, weight="bold"),
-            ft.IconButton(ft.icons.ADD_CIRCLE_OUTLINE, icon_color=ft.colors.GREY_300, icon_size=20, on_click=lambda e: change_speed(0.25)),
+            ft.IconButton(ft.icons.REMOVE_CIRCLE_OUTLINE, icon_color=ft.colors.GREY_300, icon_size=20, on_click=lambda e: change_speed(-0.01)),
+            ft.Text(f"{playback_rate:.2f}x", color=ft.colors.WHITE, size=12, weight="bold"),
+            ft.IconButton(ft.icons.ADD_CIRCLE_OUTLINE, icon_color=ft.colors.GREY_300, icon_size=20, on_click=lambda e: change_speed(0.01)),
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=5)
 
         # Play/Pause Button
@@ -232,9 +253,10 @@ def main(page: ft.Page):
                         options=[
                             ft.dropdown.Option("File Name"),
                             ft.dropdown.Option("Title"),
+                            ft.dropdown.Option("Track Number"),
                         ],
                         value=current_sort_key,
-                        width=120,
+                        width=140, # Slightly wider
                         text_size=12,
                         height=40,
                         content_padding=10,
