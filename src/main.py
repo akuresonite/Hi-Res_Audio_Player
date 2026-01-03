@@ -168,11 +168,23 @@ def main(page: ft.Page):
 
     # Re-renders the entire scrollable view (Header + Queue items)
     def update_main_view():
+        nonlocal progress_slider, current_time, total_duration
+        
         # Clear existing controls
         main_list_view.controls.clear()
 
         # 1. THE PLAYER HEADER
-        # We rebuild ALL controls here to ensure they are fresh and correctly attached.
+        
+        # Recreation of Controls to ensure valid attachment
+        # We preserve current values from the existing objects (or state)
+        current_time_val = current_time.value if hasattr(current_time, 'value') else "0:00"
+        total_duration_val = total_duration.value if hasattr(total_duration, 'value') else "0:00"
+        slider_val = progress_slider.value if hasattr(progress_slider, 'value') else 0
+        slider_max = progress_slider.max if hasattr(progress_slider, 'max') else 100
+
+        current_time = ft.Text(current_time_val, size=12, color=ft.colors.GREY_300)
+        total_duration = ft.Text(total_duration_val, size=12, color=ft.colors.GREY_300)
+        progress_slider = ft.Slider(value=slider_val, min=0, max=slider_max, active_color=ft.colors.WHITE, thumb_color=ft.colors.WHITE, on_change_end=on_seek)
         
         # Speed Controls
         speed_row = ft.Row([
@@ -402,8 +414,8 @@ def main(page: ft.Page):
             current_time.value = format_time(curr_pos)
             progress_slider.update()
             current_time.update()
-        except Exception:
-            # Control might be detached during view update; ignore safe frame drop
+        except Exception as err:
+            print(f"Seek Error: {err}")
             pass
 
     def on_duration_changed(e):
