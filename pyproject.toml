@@ -1,20 +1,20 @@
 [project]
 name = "hi-res-audio-player"
 version = "0.1.0"
-description = ""
+description = "A Hi-Res Audio Player built with Flet"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
     { name = "Flet developer", email = "you@example.com" }
 ]
 dependencies = [
-  "flet==0.25.2",
+  "flet>=0.26.0",
   "tinytag>=2.2.0",
 ]
 
 [dependency-groups]
 dev = [
-  "flet[all]==0.25.2",
+  "flet[all]>=0.26.0",
 ]
 
 [tool.flet]
