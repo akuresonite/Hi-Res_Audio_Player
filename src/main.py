@@ -9,8 +9,7 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
     page.spacing = 0
-    page.bgcolor = "#000000" # Black background behind everything
-    # We will handle scrolling inside the bottom sheet, not the page
+    page.bgcolor = "#000000"
 
     # State variables
     current_track_path = None
@@ -43,13 +42,11 @@ def main(page: ft.Page):
         if e.files and len(e.files) > 0:
             playlist = [f.path for f in e.files]
             current_playlist_index = 0
-            update_playlist_view()
             load_track(playlist[0])
 
     def on_folder_picked(e):
         nonlocal playlist, current_playlist_index
         if e.path:
-            # Scan directory
             supported_ext = ('.mp3', '.flac', '.wav', '.m4a')
             new_playlist = []
             try:
@@ -61,7 +58,6 @@ def main(page: ft.Page):
                 if new_playlist:
                     playlist = sorted(new_playlist)
                     current_playlist_index = 0
-                    update_playlist_view()
                     load_track(playlist[0])
                     print(f"Loaded {len(playlist)} tracks.")
                 else:
@@ -69,8 +65,65 @@ def main(page: ft.Page):
             except Exception as err:
                 print(f"Error scanning folder: {err}")
 
-    def update_playlist_view():
-        playlist_view.controls.clear()
+    # Re-renders the entire scrollable view (Header + Queue items)
+    def update_main_view():
+        # Clear existing controls
+        main_list_view.controls.clear()
+
+        # 1. THE PLAYER HEADER (Art, Info, Controls)
+        # This is the first item in the list
+        
+        # Determine current track info (safe access)
+        title = "No Track Selected"
+        artist = "Select a file to play"
+        has_track = current_track_path is not None
+        
+        # We need to construct these dynamically or update their values?
+        # Flet controls are objects. We can keep the objects and just put them in the list.
+        # But we need to make sure their values are updated before adding.
+        # Actually, since we clear list_view.controls, we are re-attaching the SAME control objects.
+        # This works if we update the control properties separately.
+        
+        # Build the Header Container
+        header_container = ft.Container(
+            content=ft.Column([
+                ft.Container(height=60), # Top spacing for the Fixed AppBar
+                
+                # Album Art (Foreground)
+                ft.Container(
+                    content=album_art_foreground,
+                    alignment=ft.alignment.center,
+                    padding=ft.padding.symmetric(vertical=20)
+                ),
+                
+                # Track Info
+                track_title,
+                artist_name,
+                
+                ft.Container(height=20),
+                
+                # Progress
+                ft.Row([current_time, ft.Container(expand=True), total_duration], width=320),
+                progress_slider,
+                
+                ft.Container(height=10),
+                
+                # Controls
+                controls_row,
+                
+                ft.Container(height=20),
+                library_actions,
+                
+                ft.Container(height=20),
+                ft.Text("Up Next", size=18, weight="bold", color=ft.colors.WHITE),
+                ft.Container(height=10),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=20
+        )
+        
+        main_list_view.controls.append(header_container)
+
+        # 2. QUEUE ITEMS
         for i, track_path in enumerate(playlist):
             fname = os.path.basename(track_path)
             is_active = (i == current_playlist_index)
@@ -80,79 +133,82 @@ def main(page: ft.Page):
                  current_playlist_index = index
                  load_track(playlist[current_playlist_index])
 
-            # In the dark redesign, list items should be subtle
             tile = ft.Container(
                 content=ft.Row([
-                    # Visualizer bar or simple icon
-                    ft.Icon(ft.icons.EQUALIZER if is_active else ft.icons.MUSIC_NOTE, 
-                           color=ft.colors.WHITE if is_active else ft.colors.GREY_500, size=20),
+                    ft.Text(f"{i+1}", color=ft.colors.GREY_500, width=30),
                     ft.Column([
-                        ft.Text(fname, color=ft.colors.WHITE if is_active else ft.colors.GREY_300, 
+                        ft.Text(fname, color=ft.colors.CYAN_400 if is_active else ft.colors.WHITE, 
                                weight="bold" if is_active else "normal",
-                               size=14, overflow=ft.TextOverflow.ELLIPSIS),
-                        ft.Text(f"Track {i+1}", color=ft.colors.GREY_600, size=12)
-                    ], spacing=2, expand=True)
+                               size=16, overflow=ft.TextOverflow.ELLIPSIS),
+                       # ft.Text("Artist Name", color=ft.colors.GREY_600, size=12) 
+                    ], expand=True),
+                    ft.Icon(ft.icons.GRAPHIC_EQ if is_active else None, color=ft.colors.CYAN_400, size=20)
                 ]),
-                padding=10,
+                padding=ft.padding.symmetric(vertical=10, horizontal=20),
                 border_radius=10,
                 bgcolor=ft.colors.with_opacity(0.1, ft.colors.WHITE) if is_active else None,
                 on_click=play_clicked_track
             )
-            playlist_view.controls.append(tile)
-        playlist_view.update()
+            main_list_view.controls.append(tile)
+
+        # Update the list view
+        main_list_view.update()
 
     def load_track(file_path):
         nonlocal current_track_path, duration, is_playing
         current_track_path = file_path
         
-        # Reset UI
+        # Reset UI Values
         current_time.value = "0:00"
         progress_slider.value = 0
         play_button_icon.icon = ft.icons.PLAY_ARROW_ROUNDED
         
-        # Reset Art
-        img_bg.src = "https://loremflickr.com/500/500/abstract,music"
+        # Images Defaults
+        default_img = "https://loremflickr.com/500/500/abstract,music"
+        img_bg.src = default_img
         img_bg.src_base64 = None
+        album_art_image_control.src = default_img
+        album_art_image_control.src_base64 = None
 
-        # Get Metadata
+        # Metadata extraction
         try:
             tag = TinyTag.get(file_path, image=True)
             track_title.value = tag.title if tag.title else os.path.basename(file_path)
-            artist_name.value = tag.artist if tag.artist else "Unknown"
+            artist_name.value = tag.artist if tag.artist else "Unknown Artist"
             
-            # Badge info
-            sample_rate = f"{tag.samplerate} Hz" if tag.samplerate else ""
-            # bitrate = f"{tag.bitrate} kbits/s" if tag.bitrate else "" # Removed to cleaner look requested
-            # audio_specs_text.value = f"{bitrate} | {sample_rate}" # Maybe keep minimal
-            
-            # Load duration
             if tag.duration:
-                duration = tag.duration * 1000 # convert to ms
+                duration = tag.duration * 1000 
                 total_duration.value = format_time(duration)
                 progress_slider.max = duration
             
-            # Album Art
+            # Art extraction
             art_b64 = get_album_art_base64(file_path)
             if art_b64:
                 img_bg.src_base64 = art_b64
-                img_bg.src = "" 
+                img_bg.src = ""
+                album_art_image_control.src_base64 = art_b64
+                album_art_image_control.src = ""
             
         except Exception as err:
             print(f"Error loading metadata: {err}")
             track_title.value = os.path.basename(file_path)
 
+        # Audio Player
         audio_player.src = file_path
         audio_player.autoplay = True
         audio_player.update()
         
-        # Auto play state
         is_playing = True
         play_button_icon.icon = ft.icons.PAUSE_ROUNDED
-        play_button_icon.update()
         
-        update_playlist_view()
-        page.update()
-
+        # Refresh the whole view to prevent stale state and update highlighting
+        update_main_view()
+        
+        # We need to update individual components that might have changed if update_main_view() doesn't force redraw of them
+        # (It re-adds them, so it usually refreshes, but for safety updating values first is good)
+        img_bg.update()
+        # No need to call page.update() if we update main_list_view and img_bg
+        
     def toggle_play_pause(e):
         nonlocal is_playing
         if not current_track_path:
@@ -198,14 +254,16 @@ def main(page: ft.Page):
         duration = int(e.data)
         progress_slider.max = duration
         total_duration.value = format_time(duration)
-        page.update()
+        # Note: We don't need full page update here, just the slider/text
+        progress_slider.update()
+        total_duration.update()
 
     def on_audiostate_changed(e):
         if e.data == "completed":
             play_next(None)
 
-    # --- CONTROLS ---
-
+    # --- CONTROLS INSTANCES ---
+    
     # Audio
     audio_player = ft.Audio(
         src="https://loremflickr.com/audio.mp3",
@@ -220,152 +278,113 @@ def main(page: ft.Page):
     file_picker = ft.FilePicker(on_result=on_file_picked)
     folder_picker = ft.FilePicker(on_result=on_folder_picked)
     page.overlay.extend([file_picker, folder_picker])
-
-    # --- UI LAYOUT ---
-
-    # 1. Background Image (The "Galaxy" look)
+    
+    # -- UI COMPONENTS (Defined once, re-used in loop) --
+    
+    # Background Image
     img_bg = ft.Image(
         src="https://loremflickr.com/500/500/abstract,music",
         fit=ft.ImageFit.COVER,
-        opacity=0.6, # Darken it a bit
+        opacity=0.4,
     )
     
-    # 2. Header (Back Button, Menu)
-    header = ft.Row(
-        [
-            ft.IconButton(ft.icons.KEYBOARD_ARROW_DOWN, icon_color=ft.colors.WHITE, bgcolor=ft.colors.with_opacity(0.2, ft.colors.WHITE)),
-            ft.IconButton(ft.icons.MORE_HORIZ, icon_color=ft.colors.WHITE, bgcolor=ft.colors.with_opacity(0.2, ft.colors.WHITE)),
-        ],
-        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+    # Foreground Album Art
+    # ft.Image does not support shadow directly in some versions. Wrap in Container.
+    album_art_image_control = ft.Image(
+        src="https://loremflickr.com/500/500/abstract,music",
+        width=250, height=250,
+        fit=ft.ImageFit.COVER,
+        border_radius=20,
     )
-
-    # 3. Bottom Card Components
     
-    track_title = ft.Text("No Track Selected", size=28, weight="bold", color=ft.colors.WHITE, text_align="center")
-    artist_name = ft.Text("Select a file to play", size=16, color=ft.colors.GREY_400)
-    
-    # Waveform placeholder (Visual only, simple bars)
-    waveform = ft.Row(
-        controls=[
-            ft.Container(width=4, height=30, bgcolor=ft.colors.WHITE, border_radius=2),
-            ft.Container(width=4, height=50, bgcolor=ft.colors.WHITE, border_radius=2),
-            ft.Container(width=4, height=40, bgcolor=ft.colors.WHITE, border_radius=2),
-            ft.Container(width=4, height=20, bgcolor=ft.colors.WHITE, border_radius=2),
-            ft.Container(width=4, height=45, bgcolor=ft.colors.WHITE, border_radius=2),
-             ft.Container(width=4, height=30, bgcolor=ft.colors.WHITE, border_radius=2),
-            ft.Container(width=4, height=50, bgcolor=ft.colors.WHITE, border_radius=2),
-        ],
-        alignment=ft.MainAxisAlignment.CENTER,
-        opacity=0.5
+    album_art_foreground = ft.Container(
+        content=album_art_image_control,
+        shadow=ft.BoxShadow(blur_radius=20, color=ft.colors.BLACK),
+        border_radius=20
     )
-
-    # Sliders
-    current_time = ft.Text("0:00", size=12, color=ft.colors.GREY_400)
-    total_duration = ft.Text("0:00", size=12, color=ft.colors.GREY_400)
+    
+    track_title = ft.Text("No Track", size=24, weight="bold", color=ft.colors.WHITE, text_align="center")
+    artist_name = ft.Text("Select a folder...", size=16, color=ft.colors.GREY_400)
+    
+    current_time = ft.Text("0:00", size=12, color=ft.colors.GREY_300)
+    total_duration = ft.Text("0:00", size=12, color=ft.colors.GREY_300)
     progress_slider = ft.Slider(value=0, min=0, max=100, active_color=ft.colors.WHITE, thumb_color=ft.colors.WHITE, on_change_end=on_seek)
     
-    # Controls Row
+    # Buttons
     play_button_icon = ft.IconButton(
         icon=ft.icons.PLAY_ARROW_ROUNDED,
         icon_color=ft.colors.BLACK,
         icon_size=40,
-        bgcolor=ft.colors.WHITE, # White circle
+        bgcolor=ft.colors.WHITE,
         on_click=toggle_play_pause
     )
-    play_btn_container = ft.Container(content=play_button_icon, border_radius=50, bgcolor=ft.colors.WHITE, padding=10)
+    play_btn_container = ft.Container(content=play_button_icon, border_radius=50, bgcolor=ft.colors.WHITE, padding=5)
     
-    controls = ft.Row(
+    controls_row = ft.Row(
         [
             ft.IconButton(ft.icons.SHUFFLE, icon_color=ft.colors.GREY_500),
-            ft.IconButton(ft.icons.SKIP_PREVIOUS_ROUNDED, icon_color=ft.colors.GREY_300, icon_size=30, bgcolor=ft.colors.with_opacity(0.1, ft.colors.WHITE), on_click=play_prev),
+            ft.IconButton(ft.icons.SKIP_PREVIOUS_ROUNDED, icon_color=ft.colors.WHITE, icon_size=30, on_click=play_prev),
             play_btn_container,
-            ft.IconButton(ft.icons.SKIP_NEXT_ROUNDED, icon_color=ft.colors.GREY_300, icon_size=30, bgcolor=ft.colors.with_opacity(0.1, ft.colors.WHITE), on_click=play_next),
+            ft.IconButton(ft.icons.SKIP_NEXT_ROUNDED, icon_color=ft.colors.WHITE, icon_size=30, on_click=play_next),
             ft.IconButton(ft.icons.REPEAT, icon_color=ft.colors.GREY_500),
         ],
         alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         vertical_alignment=ft.CrossAxisAlignment.CENTER
     )
-
-    # Playlist View (Queue)
-    playlist_view = ft.ListView(
-        expand=True,
-        spacing=5,
-        padding=10,
-        height=200 # Fixed height to allow scrolling within the card
-    )
-
-    # Library Actions
+    
     library_actions = ft.Row([
-        ft.ElevatedButton("File", icon=ft.icons.AUDIO_FILE, color=ft.colors.WHITE, bgcolor=ft.colors.GREY_900, on_click=lambda _: file_picker.pick_files(allow_multiple=False, allowed_extensions=["mp3", "flac"])),
-        ft.ElevatedButton("Folder", icon=ft.icons.CREATE_NEW_FOLDER, color=ft.colors.WHITE, bgcolor=ft.colors.GREY_900, on_click=lambda _: folder_picker.get_directory_path())
+        ft.OutlinedButton("File", icon=ft.icons.AUDIO_FILE, style=ft.ButtonStyle(color=ft.colors.GREY_300), on_click=lambda _: file_picker.pick_files(allow_multiple=False, allowed_extensions=["mp3", "flac"])),
+        ft.OutlinedButton("Folder", icon=ft.icons.CREATE_NEW_FOLDER, style=ft.ButtonStyle(color=ft.colors.GREY_300), on_click=lambda _: folder_picker.get_directory_path())
     ], alignment=ft.MainAxisAlignment.CENTER)
 
-    # Bottom Sheet Content
-    bottom_sheet_content = ft.Column(
+    # Main Scrollable View
+    main_list_view = ft.ListView(
+        expand=True,
+        padding=0,
+        spacing=0
+    )
+
+    # AppBar (Fixed Overlay)
+    app_bar_row = ft.Row(
         [
-            ft.Container(height=10),
-            track_title,
-            artist_name,
-            ft.Container(height=20),
-            waveform,
-            ft.Container(height=10),
-            ft.Row([current_time, ft.Container(expand=True), total_duration], width=300), 
-            progress_slider,
-            ft.Container(height=10),
-            controls,
-            ft.Container(height=20),
-            ft.Divider(color=ft.colors.GREY_800),
-            library_actions,
-            ft.Container(height=10),
-            playlist_view
+            ft.IconButton(ft.icons.KEYBOARD_ARROW_DOWN, icon_color=ft.colors.WHITE),
+            ft.Text("NOW PLAYING", size=12, weight="bold", color=ft.colors.GREY_400),
+            ft.IconButton(ft.icons.MORE_HORIZ, icon_color=ft.colors.WHITE),
         ],
-        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        scroll=ft.ScrollMode.AUTO # Enable scrolling so buttons aren't cut off
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
     )
 
-    # The Glassmorphic/Card Container
-    bottom_card = ft.Container(
-        content=bottom_sheet_content,
-        bgcolor=ft.colors.BLACK, # Solid black or very dark grey
-        border_radius=ft.border_radius.only(top_left=40, top_right=40),
-        padding=20,
-        expand=True, # Expand to fill bottom area
-        shadow=ft.BoxShadow(blur_radius=50, color=ft.colors.BLACK) 
-    )
 
-    # Main Stack
+
+    # --- FINAL COMPOSITION ---
     stack = ft.Stack(
         [
-            # Layer 1: Background Image (Full Screen)
-            ft.Container(content=img_bg, expand=True, alignment=ft.alignment.top_center),
+            # Layer 1: Background
+            ft.Container(content=img_bg, expand=True, alignment=ft.alignment.center),
             
-            # Layer 2: Gradient Overlay (make top art readable but bottom dark)
+            # Layer 2: Gradient
             ft.Container(
                 gradient=ft.LinearGradient(
                     begin=ft.alignment.top_center,
                     end=ft.alignment.bottom_center,
-                    colors=[ft.colors.TRANSPARENT, ft.colors.BLACK],
-                    stops=[0.0, 0.6]
+                    colors=[ft.colors.with_opacity(0.5, ft.colors.BLACK), ft.colors.BLACK],
+                    stops=[0.0, 1.0]
                 ),
                 expand=True
             ),
             
-            # Layer 3: Header
-            ft.Container(content=header, padding=20, top=0, left=0, right=0),
-
-            # Layer 4: Bottom Card (Positioned at bottom)
-            # We use a Column to push the card to the bottom
-            ft.Column(
-                [
-                    ft.Container(expand=True), # Spacer to push card down
-                    bottom_card
-                ],
-                expand=True
-            )
+            # Layer 3: Scrollable Content
+            main_list_view,
+            
+            # Layer 4: Fixed Header (App Bar)
+            ft.Container(content=app_bar_row, padding=ft.padding.symmetric(horizontal=10, vertical=5), bgcolor=ft.colors.TRANSPARENT, height=60),
         ],
         expand=True
     )
 
     page.add(stack)
+    
+    # Initialize View after adding to page
+    update_main_view()
 
 ft.app(target=main)
