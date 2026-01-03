@@ -1,0 +1,103 @@
+[16:54:37] No additional Flutter dependencies!                                 
+[16:54:42] Created Flutter bootstrap project from                              
+           gh:flet-dev/flet-build-template with ref 0.25.2 Γ£à                  
+           Copying D:\Ashish\Google Drive                                      
+           Laptop\projects\Mobile-Apps\Hi-Res_Audio_Player\src\assets\icon.png 
+           to D:\Ashish\Google Drive                                           
+           Laptop\projects\Mobile-Apps\Hi-Res_Audio_Player\build\flutter\images
+           Copying D:\Ashish\Google Drive                                      
+           Laptop\projects\Mobile-Apps\Hi-Res_Audio_Player\src\assets\splash_an
+           droid.png to D:\Ashish\Google Drive                                 
+           Laptop\projects\Mobile-Apps\Hi-Res_Audio_Player\build\flutter\images
+           Customized app icons and splash images Γ£à                           
+           Run subprocess:                                                     
+           ['C:\\Users\\akure\\develop\\flutter\\bin\\dart.BAT', 'run',        
+           'flutter_launcher_icons']                                           
+  ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+     FLUTTER LAUNCHER ICONS (v0.14.4)                               
+  ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  
+ΓÇó Creating default icons Android
+ΓÇó Creating adaptive icons Android
+ΓÇó Overwriting the default Android launcher icon with a new icon
+ΓÇó Updating colors.xml with color for adaptive icon background
+ΓÇó Creating mipmap xml file Android
+ΓÇó Overwriting default iOS launcher icon with new icon
+Creating Icons for Web...
+Creating Icons for Windows...
+Creating Icons for MacOS...
+
+Γ£ô Successfully generated launcher icons
+[16:54:45] Generated app icons Γ£à                                              
+           Run subprocess:                                                     
+           ['C:\\Users\\akure\\develop\\flutter\\bin\\dart.BAT', 'run',        
+           'flutter_native_splash:create']                                     
+[Android] Creating default splash images
+[Android] Creating dark mode splash images
+[Android] Creating default android12splash images
+[Android] Creating dark mode android12splash images
+[Android] Updating launch background(s) with splash image path...
+[Android]  - android/app/src/main/res/drawable/launch_background.xml
+[Android]  - android/app/src/main/res/drawable-night/launch_background.xml
+[Android]  - android/app/src/main/res/drawable-v21/launch_background.xml
+[Android]  - android/app/src/main/res/drawable-night-v21/launch_background.xml
+[Android] Updating styles...
+[Android]  - android/app/src/main/res/values-v31/styles.xml
+[Android]  - android/app/src/main/res/values-night-v31/styles.xml
+[Android]  - android/app/src/main/res/values/styles.xml
+[Android]  - android/app/src/main/res/values-night/styles.xml
+[iOS] Creating  images
+[iOS] Creating dark mode  images
+[iOS] Updating ios/Runner/Info.plist for status bar hidden/visible
+[Web] Creating images
+[Web] Creating images
+[Web] Creating background images
+[Web] Creating CSS
+[Web] Updating index.html
+
+Γ£à Native splash complete.
+Now go finish building something awesome! ≡ƒÆ¬ You rock! ≡ƒñÿ≡ƒñ⌐
+Like the package? Please give it a ≡ƒæì here: https://pub.dev/packages/flutter_native_splash
+
+[16:54:47] Generated splash screens Γ£à                                         
+           Run subprocess:                                                     
+           ['C:\\Users\\akure\\develop\\flutter\\bin\\dart.BAT', 'run',        
+           'serious_python:main', 'package', 'D:\\Ashish\\Google Drive         
+           Laptop\\projects\\Mobile-Apps\\Hi-Res_Audio_Player\\src',           
+           '--platform', 'Android', '--requirements',                          
+           'flet==0.25.2,tinytag>=2.2.0', '--exclude', 'build', '--cleanup']   
+[16:55:11] Packaged Python app Γ£à                                              
+           Run subprocess:                                                     
+           ['C:\\Users\\akure\\develop\\flutter\\bin\\flutter.BAT', 'build',   
+           'apk', '--build-name', '0.1.0']                                     
+[!] No Android SDK found. Try setting the ANDROID_HOME environment variable.
+[16:55:13] Error building Flet app - see the log of failed command above.      
+           Run subprocess:                                                     
+           ['C:\\Users\\akure\\develop\\flutter\\bin\\flutter.BAT',            
+           '--version']                                                        
+[16:55:15] Run subprocess:                                                     
+           ['C:\\Users\\akure\\develop\\flutter\\bin\\flutter.BAT', 'doctor']  
+[16:55:19] Doctor summary (to see all details, run flutter doctor -v):         
+           [ΓêÜ] Flutter (Channel stable, 3.38.5, on Microsoft Windows [Version  
+           10.0.26200.7462], locale en-IN)                                     
+           [ΓêÜ] Windows Version (Windows 11 or higher, 25H2, 2009)              
+           [X] Android toolchain - develop for Android devices                 
+               X Unable to locate Android SDK.                                 
+                 Install Android Studio from:                                  
+           https://developer.android.com/studio/index.html                     
+                 On first launch it will assist you in installing the Android  
+           SDK components.                                                     
+                 (or visit https://flutter.dev/to/windows-android-setup for    
+           detailed instructions).                                             
+                 If the Android SDK has been installed to a custom location,   
+           please use                                                          
+                 `flutter config --android-sdk` to update to that location.    
+                                                                               
+           [ΓêÜ] Chrome - develop for the web                                    
+           [ΓêÜ] Visual Studio - develop Windows apps (Visual Studio Build Tools 
+           2019 16.11.51)                                                      
+           [ΓêÜ] Connected device (3 available)                                  
+           [ΓêÜ] Network resources                                               
+                                                                               
+           ! Doctor found issues in 1 category.                                
+                                                                               
