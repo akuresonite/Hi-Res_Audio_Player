@@ -91,11 +91,11 @@ def main(page: ft.Page):
 
     # --- EVENT HANDLERS ---
     
-    def on_file_picked(e):
+    def on_file_picked(files):
         nonlocal current_track, playlist, current_playlist_index
-        if e.files and len(e.files) > 0:
+        if files and len(files) > 0:
             new_tracks = []
-            for f in e.files:
+            for f in files:
                 new_tracks.append(extract_metadata(f.path))
             
             playlist = new_tracks
@@ -104,14 +104,14 @@ def main(page: ft.Page):
                 load_track(playlist[0])
             update_main_view()
 
-    def on_folder_picked(e):
+    def on_folder_picked(path):
         nonlocal playlist, current_playlist_index
-        if e.path:
+        if path:
             supported_ext = ('.mp3', '.flac', '.wav', '.m4a', '.alac')
             new_playlist = []
             try:
                 # Show loading? (Blocking for now, simpler)
-                for root, dirs, files in os.walk(e.path):
+                for root, dirs, files in os.walk(path):
                     for file in files:
                         if file.lower().endswith(supported_ext):
                             full_path = os.path.join(root, file)
@@ -182,44 +182,79 @@ def main(page: ft.Page):
         slider_val = progress_slider.value if hasattr(progress_slider, 'value') else 0
         slider_max = progress_slider.max if hasattr(progress_slider, 'max') else 100
 
-        current_time = ft.Text(current_time_val, size=12, color=ft.colors.GREY_300)
-        total_duration = ft.Text(total_duration_val, size=12, color=ft.colors.GREY_300)
-        progress_slider = ft.Slider(value=slider_val, min=0, max=slider_max, active_color=ft.colors.WHITE, thumb_color=ft.colors.WHITE, on_change_end=on_seek)
+        current_time = ft.Text(current_time_val, size=12, color=ft.Colors.GREY_300)
+        total_duration = ft.Text(total_duration_val, size=12, color=ft.Colors.GREY_300)
+        progress_slider = ft.Slider(value=slider_val, min=0, max=slider_max, active_color=ft.Colors.WHITE, thumb_color=ft.Colors.WHITE)
+        progress_slider.on_change_end = on_seek
         
         # Speed Controls
+        btn_speed_down = ft.IconButton(ft.Icons.REMOVE_CIRCLE_OUTLINE, icon_color=ft.Colors.GREY_300, icon_size=20)
+        btn_speed_down.on_click = lambda e: change_speed(-0.01)
+        btn_speed_up = ft.IconButton(ft.Icons.ADD_CIRCLE_OUTLINE, icon_color=ft.Colors.GREY_300, icon_size=20)
+        btn_speed_up.on_click = lambda e: change_speed(0.01)
+
         speed_row = ft.Row([
-            ft.Text("Speed:", color=ft.colors.GREY_400, size=12),
-            ft.IconButton(ft.icons.REMOVE_CIRCLE_OUTLINE, icon_color=ft.colors.GREY_300, icon_size=20, on_click=lambda e: change_speed(-0.01)),
-            ft.Text(f"{playback_rate:.2f}x", color=ft.colors.WHITE, size=12, weight="bold"),
-            ft.IconButton(ft.icons.ADD_CIRCLE_OUTLINE, icon_color=ft.colors.GREY_300, icon_size=20, on_click=lambda e: change_speed(0.01)),
+            ft.Text("Speed:", color=ft.Colors.GREY_400, size=12),
+            btn_speed_down,
+            ft.Text(f"{playback_rate:.2f}x", color=ft.Colors.WHITE, size=12, weight="bold"),
+            btn_speed_up,
         ], alignment=ft.MainAxisAlignment.CENTER, spacing=5)
 
         # Play/Pause Button
-        current_icon = ft.icons.PAUSE_ROUNDED if is_playing else ft.icons.PLAY_ARROW_ROUNDED
-        play_btn = ft.Container(
-            content=ft.IconButton(
+        current_icon = ft.Icons.PAUSE_ROUNDED if is_playing else ft.Icons.PLAY_ARROW_ROUNDED
+        btn_play_inner = ft.IconButton(
                 icon=current_icon,
-                icon_color=ft.colors.BLACK,
+                icon_color=ft.Colors.BLACK,
                 icon_size=40,
-                bgcolor=ft.colors.WHITE,
-                on_click=toggle_play_pause
-            ),
+                bgcolor=ft.Colors.WHITE
+            )
+        btn_play_inner.on_click = toggle_play_pause
+
+        play_btn = ft.Container(
+            content=btn_play_inner,
             border_radius=50, 
-            bgcolor=ft.colors.WHITE, 
+            bgcolor=ft.Colors.WHITE, 
             padding=5
         )
 
+        btn_prev = ft.IconButton(ft.Icons.SKIP_PREVIOUS_ROUNDED, icon_color=ft.Colors.WHITE, icon_size=30)
+        btn_prev.on_click = play_prev
+        btn_next = ft.IconButton(ft.Icons.SKIP_NEXT_ROUNDED, icon_color=ft.Colors.WHITE, icon_size=30)
+        btn_next.on_click = play_next
+
         current_controls_row = ft.Row(
             [
-                ft.IconButton(ft.icons.SHUFFLE, icon_color=ft.colors.GREY_500),
-                ft.IconButton(ft.icons.SKIP_PREVIOUS_ROUNDED, icon_color=ft.colors.WHITE, icon_size=30, on_click=play_prev),
+                ft.IconButton(ft.Icons.SHUFFLE, icon_color=ft.Colors.GREY_500),
+                btn_prev,
                 play_btn,
-                ft.IconButton(ft.icons.SKIP_NEXT_ROUNDED, icon_color=ft.colors.WHITE, icon_size=30, on_click=play_next),
-                ft.IconButton(ft.icons.REPEAT, icon_color=ft.colors.GREY_500),
+                btn_next,
+                ft.IconButton(ft.Icons.REPEAT, icon_color=ft.Colors.GREY_500),
             ],
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
             vertical_alignment=ft.CrossAxisAlignment.CENTER
         )
+
+        sort_dd = ft.Dropdown(
+                        options=[
+                            ft.dropdown.Option("File Name"),
+                            ft.dropdown.Option("Title"),
+                            ft.dropdown.Option("Track Number"),
+                        ],
+                        value=current_sort_key,
+                        width=140, # Slightly wider
+                        text_size=12,
+                        height=40,
+                        content_padding=10,
+                        bgcolor=ft.Colors.GREY_900,
+                        color=ft.Colors.WHITE,
+                        border_color=ft.Colors.GREY_700,
+                    )
+        sort_dd.on_change = lambda e: sort_playlist(e.data)
+
+        queue_header_row = ft.Row([
+            ft.Text("Up Next", size=18, weight="bold", color=ft.Colors.WHITE),
+            sort_dd
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
         # Build the Header Container
         header_container = ft.Container(
@@ -229,8 +264,8 @@ def main(page: ft.Page):
                 # Album Art (Foreground)
                 ft.Container(
                     content=album_art_foreground,
-                    alignment=ft.alignment.center,
-                    padding=ft.padding.symmetric(vertical=20)
+                    alignment=ft.Alignment(0, 0),
+                    padding=ft.Padding(top=20, bottom=20, left=0, right=0)
                 ),
                 
                 # Track Info
@@ -258,26 +293,7 @@ def main(page: ft.Page):
                 
                 ft.Container(height=20),
                 
-                # Queue Header & Sort
-                ft.Row([
-                    ft.Text("Up Next", size=18, weight="bold", color=ft.colors.WHITE),
-                    ft.Dropdown(
-                        options=[
-                            ft.dropdown.Option("File Name"),
-                            ft.dropdown.Option("Title"),
-                            ft.dropdown.Option("Track Number"),
-                        ],
-                        value=current_sort_key,
-                        width=140, # Slightly wider
-                        text_size=12,
-                        height=40,
-                        content_padding=10,
-                        on_change=lambda e: sort_playlist(e.data),
-                        bgcolor=ft.colors.GREY_900,
-                        color=ft.colors.WHITE,
-                        border_color=ft.colors.GREY_700,
-                    )
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                queue_header_row,
                 
                 ft.Container(height=10),
             ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
@@ -297,34 +313,34 @@ def main(page: ft.Page):
 
             tile = ft.Container(
                 content=ft.Row([
-                    ft.Text(f"{i+1}", color=ft.colors.GREY_500, width=30, size=12),
+                    ft.Text(f"{i+1}", color=ft.Colors.GREY_500, width=30, size=12),
                     
                     # Title
                     ft.Column([
                         ft.Text(track.get('title', 'Unknown'), 
-                               color=ft.colors.CYAN_400 if is_active else ft.colors.WHITE, 
+                               color=ft.Colors.CYAN_400 if is_active else ft.Colors.WHITE, 
                                weight="bold" if is_active else "normal",
                                size=14, overflow=ft.TextOverflow.ELLIPSIS),
                     ], expand=True),
                     
                     # Metadata (Time | Type)
                     ft.Row([
-                       ft.Text(format_time(track.get('duration', 0)), color=ft.colors.GREY_500, size=11, font_family="monospace"),
+                       ft.Text(format_time(track.get('duration', 0)), color=ft.Colors.GREY_500, size=11, font_family="monospace"),
                        ft.Container(
-                           content=ft.Text(track.get('ext', ''), size=9, weight="bold", color=ft.colors.BLACK),
-                           bgcolor=ft.colors.GREY_400,
-                           padding=ft.padding.symmetric(horizontal=4, vertical=2),
+                           content=ft.Text(track.get('ext', ''), size=9, weight="bold", color=ft.Colors.BLACK),
+                           bgcolor=ft.Colors.GREY_400,
+                           padding=ft.Padding(top=2, bottom=2, left=4, right=4),
                            border_radius=4
                        )
                     ], spacing=10, alignment=ft.MainAxisAlignment.END)
                     
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                padding=ft.padding.symmetric(vertical=8, horizontal=15),
+                padding=ft.Padding(top=8, bottom=8, left=15, right=15),
                 border_radius=8,
-                bgcolor=ft.colors.with_opacity(0.1, ft.colors.WHITE) if is_active else None,
-                on_click=play_clicked_track,
+                bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.WHITE) if is_active else None,
                 ink=True
             )
+            tile.on_click = play_clicked_track
             main_list_view.controls.append(tile)
 
         # Update the list view
@@ -446,18 +462,16 @@ def main(page: ft.Page):
     
     # Audio
     audio_player = ft.Audio(
-        src="https://loremflickr.com/audio.mp3",
-        autoplay=False,
-        on_position_changed=on_position_changed,
-        on_duration_changed=on_duration_changed,
-        on_state_changed=on_audiostate_changed,
+        src="https://loremflickr.com/audio.mp3"
     )
+    audio_player.autoplay = False
+    audio_player.on_position_changed = on_position_changed
+    audio_player.on_duration_changed = on_duration_changed
+    audio_player.on_state_changed = on_audiostate_changed
+    
     page.overlay.append(audio_player)
 
-    # Pickers
-    file_picker = ft.FilePicker(on_result=on_file_picked)
-    folder_picker = ft.FilePicker(on_result=on_folder_picked)
-    page.overlay.extend([file_picker, folder_picker])
+
     
     # -- UI COMPONENTS --
     
@@ -478,23 +492,52 @@ def main(page: ft.Page):
     
     album_art_foreground = ft.Container(
         content=album_art_image_control,
-        shadow=ft.BoxShadow(blur_radius=20, color=ft.colors.BLACK),
+        shadow=ft.BoxShadow(blur_radius=20, color=ft.Colors.BLACK),
         border_radius=20
     )
     
-    track_title = ft.Text("No Track", size=24, weight="bold", color=ft.colors.WHITE, text_align="center")
-    artist_name = ft.Text("Select a folder...", size=16, color=ft.colors.GREY_400)
+    track_title = ft.Text("No Track", size=24, weight="bold", color=ft.Colors.WHITE, text_align="center")
+    artist_name = ft.Text("Select a folder...", size=16, color=ft.Colors.GREY_400)
     
-    current_time = ft.Text("0:00", size=12, color=ft.colors.GREY_300)
-    total_duration = ft.Text("0:00", size=12, color=ft.colors.GREY_300)
-    progress_slider = ft.Slider(value=0, min=0, max=100, active_color=ft.colors.WHITE, thumb_color=ft.colors.WHITE, on_change_end=on_seek)
+    current_time = ft.Text("0:00", size=12, color=ft.Colors.GREY_300)
+    total_duration = ft.Text("0:00", size=12, color=ft.Colors.GREY_300)
+    progress_slider = ft.Slider(value=0, min=0, max=100, active_color=ft.Colors.WHITE, thumb_color=ft.Colors.WHITE)
+    progress_slider.on_change_end = on_seek
     
-    # NOTE: play_button_icon, speed_text etc are now LOCAL inside update_main_view to prevent detachment issues.
-    # We remove their global definitions or just ignore them.
+    # FilePicker callbacks
+    def file_picker_result(e):
+        print(f"DEBUG: file_picker_result called, e.files = {e.files}")
+        if e.files:
+            on_file_picked(e.files)
     
+    def folder_picker_result(e):
+        print(f"DEBUG: folder_picker_result called, e.path = {e.path}")
+        if e.path:
+            on_folder_picked(e.path)
+    
+    # FilePicker instances
+    file_picker = ft.FilePicker()
+    file_picker.on_result = file_picker_result
+    
+    folder_picker = ft.FilePicker()
+    folder_picker.on_result = folder_picker_result
+    
+    
+    async def on_file_button_click(e):
+        await file_picker.pick_files_async(allow_multiple=True, allowed_extensions=["mp3", "flac", "wav", "m4a", "alac"])
+    
+    async def on_folder_button_click(e):
+        await folder_picker.get_directory_path_async()
+    
+    btn_lib_file = ft.OutlinedButton("File", icon=ft.Icons.AUDIO_FILE, style=ft.ButtonStyle(color=ft.Colors.GREY_300))
+    btn_lib_file.on_click = on_file_button_click
+    
+    btn_lib_folder = ft.OutlinedButton("Folder", icon=ft.Icons.CREATE_NEW_FOLDER, style=ft.ButtonStyle(color=ft.Colors.GREY_300))
+    btn_lib_folder.on_click = on_folder_button_click
+
     library_actions = ft.Row([
-        ft.OutlinedButton("File", icon=ft.icons.AUDIO_FILE, style=ft.ButtonStyle(color=ft.colors.GREY_300), on_click=lambda _: file_picker.pick_files(allow_multiple=True, allowed_extensions=["mp3", "flac", "wav", "m4a", "alac"])),
-        ft.OutlinedButton("Folder", icon=ft.icons.CREATE_NEW_FOLDER, style=ft.ButtonStyle(color=ft.colors.GREY_300), on_click=lambda _: folder_picker.get_directory_path())
+        btn_lib_file,
+        btn_lib_folder
     ], alignment=ft.MainAxisAlignment.CENTER)
 
     # Main Scrollable View
@@ -507,9 +550,9 @@ def main(page: ft.Page):
     # AppBar (Fixed Overlay)
     app_bar_row = ft.Row(
         [
-            ft.IconButton(ft.icons.KEYBOARD_ARROW_DOWN, icon_color=ft.colors.WHITE),
-            ft.Text("NOW PLAYING", size=12, weight="bold", color=ft.colors.GREY_400),
-            ft.IconButton(ft.icons.MORE_HORIZ, icon_color=ft.colors.WHITE),
+            ft.IconButton(ft.Icons.KEYBOARD_ARROW_DOWN, icon_color=ft.Colors.WHITE),
+            ft.Text("NOW PLAYING", size=12, weight="bold", color=ft.Colors.GREY_400),
+            ft.IconButton(ft.Icons.MORE_HORIZ, icon_color=ft.Colors.WHITE),
         ],
         alignment=ft.MainAxisAlignment.SPACE_BETWEEN
     )
@@ -518,14 +561,14 @@ def main(page: ft.Page):
     stack = ft.Stack(
         [
             # Layer 1: Background
-            ft.Container(content=img_bg, expand=True, alignment=ft.alignment.center),
+            ft.Container(content=img_bg, expand=True, alignment=ft.Alignment(0, 0)),
             
             # Layer 2: Gradient
             ft.Container(
                 gradient=ft.LinearGradient(
-                    begin=ft.alignment.top_center,
-                    end=ft.alignment.bottom_center,
-                    colors=[ft.colors.with_opacity(0.5, ft.colors.BLACK), ft.colors.BLACK],
+                    begin=ft.Alignment(0, -1),
+                    end=ft.Alignment(0, 1),
+                    colors=[ft.Colors.with_opacity(0.5, ft.Colors.BLACK), ft.Colors.BLACK],
                     stops=[0.0, 1.0]
                 ),
                 expand=True
@@ -535,7 +578,7 @@ def main(page: ft.Page):
             main_list_view,
             
             # Layer 4: Fixed Header (App Bar)
-            ft.Container(content=app_bar_row, padding=ft.padding.symmetric(horizontal=10, vertical=5), bgcolor=ft.colors.TRANSPARENT, height=60),
+            ft.Container(content=app_bar_row, padding=ft.Padding(top=5, bottom=5, left=10, right=10), bgcolor=ft.Colors.TRANSPARENT, height=60),
         ],
         expand=True
     )

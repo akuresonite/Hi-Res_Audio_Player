@@ -20,14 +20,3 @@ Write-Host "Starting build process..." -ForegroundColor Green
 flet build apk
 Write-Host "Build command executed." -ForegroundColor Cyan
 
-# Copy the build output to the project root
-$sourcePath = "D:\Ashish\Google Drive Laptop\projects\Mobile-Apps\Hi-Res_Audio_Player\build\apk"
-$destPath = "D:\Ashish\Google Drive Laptop\projects\Mobile-Apps\Hi-Res_Audio_Player"
-
-if (Test-Path $sourcePath) {
-    Write-Host "Copying APK folder to project root..." -ForegroundColor Green
-    Copy-Item -Path $sourcePath -Destination $destPath -Recurse -Force
-}
-else {
-    Write-Warning "Source folder not found: $sourcePath"
-}
