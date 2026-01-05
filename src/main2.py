@@ -1,8 +1,10 @@
 import flet as ft
+import flet_audio as fta
 from tinytag import TinyTag
 import os
 import base64
 import re
+import asyncio
 
 def main(page: ft.Page):
     # 1. Page Configuration
@@ -305,7 +307,8 @@ def main(page: ft.Page):
         # 2. QUEUE ITEMS
         for i, track in enumerate(playlist):
             is_active = (i == current_playlist_index)
-            
+            print(track)
+
             def play_clicked_track(e, index=i):
                  nonlocal current_playlist_index
                  current_playlist_index = index
@@ -356,7 +359,7 @@ def main(page: ft.Page):
         progress_slider.value = 0
         
         # Images Defaults
-        default_img = "https://loremflickr.com/500/500/abstract,music"
+        default_img = "../assets/tulips.jpg"
         img_bg.src = default_img
         img_bg.src_base64 = None
         album_art_image_control.src = default_img
@@ -381,10 +384,10 @@ def main(page: ft.Page):
             
         # Audio Player
         # Ensure player stops before loading new src to avoid overlap issues
-        audio_player.pause() 
-        audio_player.src = file_path
-        audio_player.playback_rate = playback_rate
-        audio_player.autoplay = True
+        # audio_player.pause() 
+        # audio_player.src = file_path
+        # audio_player.playback_rate = playback_rate
+        # audio_player.autoplay = True
         
         is_playing = True
         
@@ -397,10 +400,10 @@ def main(page: ft.Page):
             return
             
         if is_playing:
-            audio_player.pause()
+            # audio_player.pause()
             is_playing = False
         else:
-            audio_player.resume()
+            # audio_player.resume()
             is_playing = True
         
         # Declarative Update
@@ -421,9 +424,9 @@ def main(page: ft.Page):
     def on_seek(e):
         if not current_track:
             return
-        audio_player.seek(int(progress_slider.value))
+        # audio_player.seek(int(progress_slider.value))
 
-    def on_position_changed(e):
+    def on_position_change(e):
         try:
             curr_pos = int(e.data)
             progress_slider.value = curr_pos
@@ -434,7 +437,7 @@ def main(page: ft.Page):
             print(f"Seek Error: {err}")
             pass
 
-    def on_duration_changed(e):
+    def on_duration_change(e):
         nonlocal duration
         try:
             duration = int(e.data)
@@ -445,15 +448,15 @@ def main(page: ft.Page):
         except Exception:
             pass
 
-    def on_audiostate_changed(e):
+    def on_audiostate_change(e):
         if e.data == "completed":
             play_next(None)
 
     def change_speed(delta):
         nonlocal playback_rate
         playback_rate = max(0.25, min(2.0, playback_rate + delta))
-        audio_player.playback_rate = playback_rate
-        audio_player.update()
+        # audio_player.playback_rate = playback_rate
+        # audio_player.update()
         
         # Declarative Update
         update_main_view()
@@ -461,15 +464,15 @@ def main(page: ft.Page):
     # --- CONTROLS INSTANCES ---
     
     # Audio
-    audio_player = ft.Audio(
-        src="https://loremflickr.com/audio.mp3"
-    )
-    audio_player.autoplay = False
-    audio_player.on_position_changed = on_position_changed
-    audio_player.on_duration_changed = on_duration_changed
-    audio_player.on_state_changed = on_audiostate_changed
+    # audio_player = fta.Audio(
+    #     src="../assets/outfoxing.mp3"
+    # )
+    # audio_player.autoplay = False
+    # audio_player.on_duration_change = on_duration_change
+    # audio_player.on_position_change = on_position_change
+    # audio_player.on_state_change = on_audiostate_change
     
-    page.overlay.append(audio_player)
+    # page.overlay.append(audio_player)
 
 
     
@@ -477,16 +480,17 @@ def main(page: ft.Page):
     
     # Background Image
     img_bg = ft.Image(
-        src="https://loremflickr.com/500/500/abstract,music",
-        fit=ft.ImageFit.COVER,
+        src="../assets/tulips.jpg",
+        fit=ft.BoxFit.COVER,
         opacity=0.4,
     )
     
     # Foreground Album Art
     album_art_image_control = ft.Image(
-        src="https://loremflickr.com/500/500/abstract,music",
-        width=250, height=250,
-        fit=ft.ImageFit.COVER,
+        src="../assets/tulips.jpg",
+        width=250, 
+        height=250,
+        fit=ft.BoxFit.COVER,
         border_radius=20,
     )
     
@@ -509,32 +513,45 @@ def main(page: ft.Page):
         print(f"DEBUG: file_picker_result called, e.files = {e.files}")
         if e.files:
             on_file_picked(e.files)
-    
+
     def folder_picker_result(e):
         print(f"DEBUG: folder_picker_result called, e.path = {e.path}")
         if e.path:
             on_folder_picked(e.path)
     
     # FilePicker instances
-    file_picker = ft.FilePicker()
-    file_picker.on_result = file_picker_result
+    # file_picker = ft.FilePicker(on_upload=file_picker_result)
+    # folder_picker = ft.FilePicker(on_upload=folder_picker_result)
+    # page.overlay.extend([file_picker, folder_picker])
+
+    file_picker = ft.FilePicker(on_upload=file_picker_result)
+    folder_picker = ft.FilePicker(on_upload=folder_picker_result)
+    # page.overlay.extend([file_picker, folder_picker])
     
-    folder_picker = ft.FilePicker()
-    folder_picker.on_result = folder_picker_result
     
-    
+    # File Picker
+    async def pick_files_async(**kwargs):
+        await file_picker.pick_files(**kwargs)
+        return file_picker
+
     async def on_file_button_click(e):
-        await file_picker.pick_files_async(allow_multiple=True, allowed_extensions=["mp3", "flac", "wav", "m4a", "alac"])
-    
-    async def on_folder_button_click(e):
-        await folder_picker.get_directory_path_async()
+        files = await pick_files_async(allow_multiple=True, allowed_extensions=["mp3", "flac", "wav", "m4a", "alac"])
     
     btn_lib_file = ft.OutlinedButton("File", icon=ft.Icons.AUDIO_FILE, style=ft.ButtonStyle(color=ft.Colors.GREY_300))
     btn_lib_file.on_click = on_file_button_click
     
+    # Folder Picker
+    async def get_directory_path_async(**kwargs):
+        await folder_picker.get_directory_path(**kwargs)
+        return folder_picker
+
+    async def on_folder_button_click(e):
+        await get_directory_path_async()    
+    
     btn_lib_folder = ft.OutlinedButton("Folder", icon=ft.Icons.CREATE_NEW_FOLDER, style=ft.ButtonStyle(color=ft.Colors.GREY_300))
     btn_lib_folder.on_click = on_folder_button_click
 
+    # Library Actions
     library_actions = ft.Row([
         btn_lib_file,
         btn_lib_folder
@@ -559,9 +576,9 @@ def main(page: ft.Page):
 
     # --- FINAL COMPOSITION ---
     stack = ft.Stack(
-        [
+        controls=[
             # Layer 1: Background
-            ft.Container(content=img_bg, expand=True, alignment=ft.Alignment(0, 0)),
+            # ft.Container(content=img_bg, expand=True, alignment=ft.Alignment(0, 0)),
             
             # Layer 2: Gradient
             ft.Container(
@@ -588,4 +605,4 @@ def main(page: ft.Page):
     # Initialize View
     update_main_view()
 
-ft.app(target=main)
+ft.run(main)

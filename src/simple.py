@@ -10,7 +10,7 @@ def main(page: ft.Page):
     page.window_height = 300
     page.window_resizable = True
 
-    url = "C:/Users/AshishkumarU/Videos/Apk/AudioApp/webaudio-examples/audio-analyser/viper.mp3"
+    url = "../assets/viper.mp3"
     audio = fta.Audio(
         src=url,
         autoplay=False,
@@ -35,13 +35,13 @@ def main(page: ft.Page):
         audio.src = url
         audio.update()
         page.update()
-        print(print("ASHISH 3", audio.src))
+        print("ASHISH 3", audio.src)
 
     # url = "https://github.com/mdn/webaudio-examples/blob/main/audio-analyser/viper.mp3?raw=true"
     # url = ""
 
     async def play():
-        await audio.play()
+        await audio.play()  
 
     async def pause():
         await audio.pause()
