@@ -59,3 +59,25 @@ flet build windows -v
 ```
 
 For more details on building Windows package, refer to the [Windows Packaging Guide](https://docs.flet.dev/publish/windows/).
+
+
+## 📊 Project Activity
+
+![GitHub Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=akuresonite&repo=Hi-Res_Audio_Player&theme=github-compact)
+
+
+
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=akuresonite&show_icons=true&include_all_commits=true&cache_seconds=86400)
+
+
+
+![GitHub Streak](https://streak-stats.demolab.com?user=akuresonite&cache_seconds=86400)
+
+
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=akuresonite&theme=tokyonight&show_icons=true)
+
+
+
+![GitHub Streak](https://streak-stats.demolab.com?user=akuresonite&theme=tokyonight)
+
+
