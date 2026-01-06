@@ -19,12 +19,13 @@ def main(page: ft.Page):
         autoplay=False,
         volume=1,
         balance=0,
-        on_loaded=lambda _: print("Loaded"),
+        on_loaded=lambda _: print("Loaded", ">"*20),
         on_duration_change=lambda e: print("Duration changed:", e.duration),
         on_position_change=lambda e: print("Position changed:", e.position),
         on_state_change=lambda e: print("State changed:", e.state),
         on_seek_complete=lambda _: print("Seek complete"),
     )
+    # page.overlay.append(audio)
 
     async def handle_pick_files(e: ft.Event[ft.Button]):
         nonlocal CURRENT_TRACK
@@ -44,6 +45,7 @@ def main(page: ft.Page):
         selected_files.value = ", ".join(PLAYLIST)
 
         audio.src = PLAYLIST[CURRENT_TRACK]
+        audio.autoplay = True
         audio.update()
         page.update()
 
@@ -57,9 +59,11 @@ def main(page: ft.Page):
 
         if CURRENT_TRACK > 0:
             CURRENT_TRACK -= 1
+            await audio.pause()
             audio.src = PLAYLIST[CURRENT_TRACK]
+            print("-"*30, "\n", "Previous track:", audio.src, "\n", "-"*30)
+            audio.autoplay = True
             audio.update()
-            await audio.play()
 
 
     async def next(e: ft.Event[ft.Button]):
@@ -70,16 +74,20 @@ def main(page: ft.Page):
 
         if CURRENT_TRACK < len(PLAYLIST) - 1:
             CURRENT_TRACK += 1
+            await audio.pause()
             audio.src = PLAYLIST[CURRENT_TRACK]
+            print("-"*30, "\n", "Next track:", audio.src, "\n", "-"*30)
+            audio.autoplay = True
             audio.update()
-            await audio.play()
 
 
     async def play(e: ft.Event[ft.Button]):
         if not PLAYLIST:
             return
 
+        await audio.pause()
         audio.src = PLAYLIST[CURRENT_TRACK]
+        print("-"*30, "\n", "Playing track:", audio.src, "\n", "-"*30)
         audio.update()
         await audio.play()
 
