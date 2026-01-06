@@ -187,7 +187,11 @@ def main(page: ft.Page):
 
         current_time = ft.Text(current_time_val, size=12, color=ft.Colors.GREY_300)
         total_duration = ft.Text(total_duration_val, size=12, color=ft.Colors.GREY_300)
-        progress_slider = ft.Slider(value=slider_val, min=0, max=slider_max, active_color=ft.Colors.WHITE, thumb_color=ft.Colors.WHITE)
+        # progress_slider = ft.Slider(value=slider_val, min=0, max=slider_max, active_color=ft.Colors.WHITE, thumb_color=ft.Colors.WHITE)
+        progress_slider.value = slider_val
+        progress_slider.max = slider_max
+        progress_slider.active_color = ft.Colors.WHITE
+        progress_slider.thumb_color = ft.Colors.WHITE
         progress_slider.on_change_end = on_seek
         
         # Speed Controls
