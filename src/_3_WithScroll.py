@@ -310,10 +310,10 @@ def main(page: ft.Page):
             is_active = (i == current_playlist_index)
             # print(track)
 
-            def play_clicked_track(e, index=i):
+            async def play_clicked_track(e, index=i):
                  nonlocal current_playlist_index
                  current_playlist_index = index
-                 load_track(playlist[current_playlist_index])
+                 await load_track(playlist[current_playlist_index])
 
             tile = ft.Container(
                 content=ft.Row([
@@ -425,18 +425,20 @@ def main(page: ft.Page):
     async def on_seek(e):
         if not current_track:
             return
+        if progress_slider.value is None:
+            return
         await audio_player.seek(int(progress_slider.value))
 
     async def on_position_change(e):
-        try:
-            curr_pos = int(e.data)
-            progress_slider.value = curr_pos
-            current_time.value = format_time(curr_pos)
-            progress_slider.update()
-            current_time.update()
-        except Exception as err:
-            print(f"Seek Error: {err}")
-            pass
+        if e.data is None:
+            return
+
+        curr_pos = int(e.data)
+        progress_slider.value = curr_pos
+        current_time.value = format_time(curr_pos)
+        progress_slider.update()
+        current_time.update()
+
 
     async def on_duration_change(e):
         nonlocal duration
