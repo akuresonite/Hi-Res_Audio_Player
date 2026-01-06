@@ -39,7 +39,7 @@ def main(page: ft.Page):
     def get_album_art_base64(file_path):
         try:
             tag = TinyTag.get(file_path, image=True)
-            image_data = tag.get_image()
+            image_data = tag.images.any
             if image_data:
                 return base64.b64encode(image_data).decode('utf-8')
         except Exception:
@@ -308,7 +308,7 @@ def main(page: ft.Page):
         # 2. QUEUE ITEMS
         for i, track in enumerate(playlist):
             is_active = (i == current_playlist_index)
-            print(track)
+            # print(track)
 
             def play_clicked_track(e, index=i):
                  nonlocal current_playlist_index
@@ -350,7 +350,7 @@ def main(page: ft.Page):
         # Update the list view
         page.update()
 
-    def load_track(track_data):
+    async def load_track(track_data):
         nonlocal current_track, duration, is_playing
         current_track = track_data
         file_path = track_data['path']
@@ -360,7 +360,7 @@ def main(page: ft.Page):
         progress_slider.value = 0
         
         # Images Defaults
-        default_img = "../assets/tulips.jpg"
+        default_img = "../assets/bg.jpg"
         img_bg.src = default_img
         img_bg.src_base64 = None
         album_art_image_control.src = default_img
@@ -385,7 +385,7 @@ def main(page: ft.Page):
             
         # Audio Player
         # Ensure player stops before loading new src to avoid overlap issues
-        audio_player.pause() 
+        await audio_player.pause() 
         audio_player.src = file_path
         audio_player.playback_rate = playback_rate
         audio_player.autoplay = True
@@ -395,39 +395,39 @@ def main(page: ft.Page):
         # Refresh the whole view to highlight current track and update Play/Pause button
         update_main_view()
         
-    def toggle_play_pause(e):
+    async def toggle_play_pause(e):
         nonlocal is_playing
         if not current_track:
             return
             
         if is_playing:
-            audio_player.pause()
+            await audio_player.pause()
             is_playing = False
         else:
-            audio_player.resume()
+            await audio_player.resume()
             is_playing = True
         
         # Declarative Update
         update_main_view()
 
-    def play_next(e):
+    async def play_next(e):
         nonlocal current_playlist_index
         if playlist and len(playlist) > 0:
             current_playlist_index = (current_playlist_index + 1) % len(playlist)
-            load_track(playlist[current_playlist_index])
+            await load_track(playlist[current_playlist_index])
 
-    def play_prev(e):
+    async def play_prev(e):
         nonlocal current_playlist_index
         if playlist and len(playlist) > 0:
             current_playlist_index = (current_playlist_index - 1) % len(playlist)
-            load_track(playlist[current_playlist_index])
+            await load_track(playlist[current_playlist_index])
 
-    def on_seek(e):
+    async def on_seek(e):
         if not current_track:
             return
-        audio_player.seek(int(progress_slider.value))
+        await audio_player.seek(int(progress_slider.value))
 
-    def on_position_change(e):
+    async def on_position_change(e):
         try:
             curr_pos = int(e.data)
             progress_slider.value = curr_pos
@@ -438,7 +438,7 @@ def main(page: ft.Page):
             print(f"Seek Error: {err}")
             pass
 
-    def on_duration_change(e):
+    async def on_duration_change(e):
         nonlocal duration
         try:
             duration = int(e.data)
@@ -453,11 +453,11 @@ def main(page: ft.Page):
         if e.data == "completed":
             play_next(None)
 
-    def change_speed(delta):
+    async def change_speed(delta):
         nonlocal playback_rate
         playback_rate = max(0.25, min(2.0, playback_rate + delta))
         audio_player.playback_rate = playback_rate
-        audio_player.update()
+        await audio_player.update()
         
         # Declarative Update
         update_main_view()
@@ -470,13 +470,13 @@ def main(page: ft.Page):
         autoplay=False,
         volume=1,
         balance=0,
-        on_loaded=lambda _: print("Loaded"),
+        on_loaded=lambda _: print("Loaded", ">"*20),
         on_duration_change = on_duration_change,
         on_position_change = on_position_change,
         on_state_change = on_audiostate_change,
     )
     
-    page.overlay.append(audio_player)
+    # page.overlay.append(audio_player)
 
 
     
@@ -484,7 +484,7 @@ def main(page: ft.Page):
     
     # Background Image
     img_bg = ft.Image(
-        src="../assets/tulips.jpg",
+        src="../assets/bg.jpg",
         fit=ft.BoxFit.COVER,
         opacity=0.4,
     )
@@ -524,7 +524,7 @@ def main(page: ft.Page):
             for track in tracks:
                 playlist.append(extract_metadata(Path(track.path).as_posix()))
             
-            print(playlist)
+            # print(playlist)
             current_playlist_index = 0
             if playlist:
                 load_track(playlist[0])
@@ -560,7 +560,7 @@ def main(page: ft.Page):
                          
                     playlist = new_playlist
                     current_playlist_index = 0
-                    load_track(playlist[0])
+                    await load_track(playlist[0])
                     print(f"Loaded {len(playlist)} tracks.")
                 else:
                     print("No audio files found in folder.")
@@ -599,7 +599,7 @@ def main(page: ft.Page):
     stack = ft.Stack(
         controls=[
             # Layer 1: Background
-            # ft.Container(content=img_bg, expand=True, alignment=ft.Alignment(0, 0)),
+            ft.Container(content=img_bg, expand=True, alignment=ft.Alignment(0, 0)),
             
             # Layer 2: Gradient
             ft.Container(
