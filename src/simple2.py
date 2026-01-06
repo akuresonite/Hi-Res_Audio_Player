@@ -110,10 +110,10 @@ def main(page: ft.Page):
         position = await audio.get_current_position()
         print("Current position:", position)
 
-    def on_seek(e: ft.Event[ft.Button]):
-        if not current_track:
-            return
-        audio_player.seek(int(progress_slider.value))
+    # def on_seek(e: ft.Event[ft.Button]):
+    #     if not current_track:
+    #         return
+    #     audio_player.seek(int(progress_slider.value))
 
     
     # --- PAGE ---
